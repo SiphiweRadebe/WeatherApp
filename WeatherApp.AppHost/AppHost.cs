@@ -1,12 +1,16 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var apiService = builder.AddProject<Projects.WeatherApp_ApiService>("apiservice")
-    .WithHttpHealthCheck("/health");
+var sqlServer = builder.AddSqlServer("sql")
+    .WithLifetime(ContainerLifetime.Persistent);
 
-builder.AddProject<Projects.WeatherApp_Web>("webfrontend")
-    .WithExternalHttpEndpoints()
-    .WithHttpHealthCheck("/health")
-    .WithReference(apiService)
-    .WaitFor(apiService);
+var weatherDb = sqlServer.AddDatabase("weatherdb");
+
+var weatherApi = builder.AddProject<Projects.WeatherApp_ApiService>("weatherapp-api")
+    .WithReference(weatherDb)
+    .WithExternalHttpEndpoints();
+
+builder.AddProject<Projects.WeatherApp_Web>("weatherapp-web")
+    .WithReference(weatherApi)
+    .WithExternalHttpEndpoints();
 
 builder.Build().Run();

@@ -40,7 +40,6 @@
 
     <Folder Include="Services\" />
     <Folder Include="Repositories\" />
-    <Folder Include="Helpers\" />
    
   </ItemGroup>
 

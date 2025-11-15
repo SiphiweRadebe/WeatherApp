@@ -6,68 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="Areas\**" />
-    <Compile Remove="Clients\**" />
-    <Compile Remove="Components\**" />
-    <Compile Remove="Content\**" />
-    <Compile Remove="Controllers\**" />
-    <Compile Remove="Data\**" />
-    <Compile Remove="Dtos\**" />
-    <Compile Remove="Entities\**" />
-    <Compile Remove="Features\**" />
-    <Compile Remove="Helpers\**" />
-    <Compile Remove="Models\**" />
-    <Compile Remove="Pages\**" />
-    <Compile Remove="Properties\**" />
-    <Compile Remove="Repositories\**" />
-    <Compile Remove="Scripts\**" />
-    <Compile Remove="Services\**" />
-    <Compile Remove="Shared\**" />
-    <Compile Remove="Styles\**" />
-    <Compile Remove="Views\**" />
-    <Compile Remove="wwwroot\**" />
-    <EmbeddedResource Remove="Areas\**" />
-    <EmbeddedResource Remove="Clients\**" />
-    <EmbeddedResource Remove="Components\**" />
-    <EmbeddedResource Remove="Content\**" />
-    <EmbeddedResource Remove="Controllers\**" />
-    <EmbeddedResource Remove="Data\**" />
-    <EmbeddedResource Remove="Dtos\**" />
-    <EmbeddedResource Remove="Entities\**" />
-    <EmbeddedResource Remove="Features\**" />
-    <EmbeddedResource Remove="Helpers\**" />
-    <EmbeddedResource Remove="Models\**" />
-    <EmbeddedResource Remove="Pages\**" />
-    <EmbeddedResource Remove="Properties\**" />
-    <EmbeddedResource Remove="Repositories\**" />
-    <EmbeddedResource Remove="Scripts\**" />
-    <EmbeddedResource Remove="Services\**" />
-    <EmbeddedResource Remove="Shared\**" />
-    <EmbeddedResource Remove="Styles\**" />
-    <EmbeddedResource Remove="Views\**" />
-    <EmbeddedResource Remove="wwwroot\**" />
-    <None Remove="Areas\**" />
-    <None Remove="Clients\**" />
-    <None Remove="Components\**" />
-    <None Remove="Content\**" />
-    <None Remove="Controllers\**" />
-    <None Remove="Data\**" />
-    <None Remove="Dtos\**" />
-    <None Remove="Entities\**" />
-    <None Remove="Features\**" />
-    <None Remove="Helpers\**" />
-    <None Remove="Models\**" />
-    <None Remove="Pages\**" />
-    <None Remove="Properties\**" />
-    <None Remove="Repositories\**" />
-    <None Remove="Scripts\**" />
-    <None Remove="Services\**" />
-    <None Remove="Shared\**" />
-    <None Remove="Styles\**" />
-    <None Remove="Views\**" />
-    <None Remove="wwwroot\**" />
-  </ItemGroup>
+  
 
   <ItemGroup>
     <PackageReference Include="FluentMigrator" Version="5.2.0" />
@@ -76,9 +15,4 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.5" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Migrations\" />
-  </ItemGroup>
-
 </Project>

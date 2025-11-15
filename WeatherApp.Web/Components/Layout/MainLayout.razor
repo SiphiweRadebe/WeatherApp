@@ -1,23 +1,60 @@
 ﻿@inherits LayoutComponentBase
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
+    <div class="sidebar bg-dark text-white p-3">
+        <h3 class="text-center mb-4">
+            <i class="bi bi-cloud-sun-fill"></i> Weather App
+        </h3>
+
+        <nav class="nav flex-column">
+            <NavLink class="nav-link text-white" href="" Match="NavLinkMatch.All">
+                <i class="bi bi-house-door"></i> Dashboard
+            </NavLink>
+            <NavLink class="nav-link text-white" href="cities">
+                <i class="bi bi-building"></i> Cities
+            </NavLink>
+            <NavLink class="nav-link text-white" href="alerts">
+                <i class="bi bi-exclamation-triangle"></i> Alerts
+            </NavLink>
+        </nav>
     </div>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
+    <main class="main-content">
+        <div class="container-fluid p-4">
             @Body
-        </article>
+        </div>
     </main>
 </div>
 
-<div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
-</div>
+<style>
+    .page {
+        display: flex;
+        min-height: 100vh;
+    }
+
+    .sidebar {
+        width: 250px;
+        position: fixed;
+        height: 100vh;
+        overflow-y: auto;
+    }
+
+    .main-content {
+        margin-left: 250px;
+        width: calc(100% - 250px);
+    }
+
+    .nav-link {
+        padding: 0.75rem 1rem;
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+    }
+
+    .nav-link:hover {
+        background-color: rgba(255,255,255,0.1);
+    }
+
+    .nav-link.active {
+        background-color: rgba(255,255,255,0.2);
+    }
+</style>

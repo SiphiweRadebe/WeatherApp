@@ -1,0 +1,119 @@
+﻿@page "/cities"
+@using WeatherApp.Web.Services
+@using WeatherApp.Web.Models
+@inject IWeatherApiClient ApiClient
+@rendermode InteractiveServer
+
+<PageTitle>Cities</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Cities</h1>
+    <button class="btn btn-primary" @onclick="ShowAddModal">
+        <i class="bi bi-plus-circle"></i> Add City
+    </button>
+</div>
+
+@if (isLoading)
+{
+    <div class="text-center my-5">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else
+{
+    <div class="row">
+        @foreach (var city in cities)
+        {
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">@city.Name</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">@city.Country</h6>
+                        <p class="card-text">
+                            <small>Lat: @city.Latitude.ToString("F4"), Lon: @city.Longitude.ToString("F4")</small>
+                        </p>
+                        <a href="/weather/@city.Id" class="btn btn-sm btn-outline-primary">View Weather</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (showAddModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New City</h5>
+                    <button type="button" class="btn-close" @onclick="HideAddModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">City Name</label>
+                        <input type="text" class="form-control" @bind="newCity.Name" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Country</label>
+                        <input type="text" class="form-control" @bind="newCity.Country" />
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Latitude</label>
+                            <input type="number" step="0.000001" class="form-control" @bind="newCity.Latitude" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Longitude</label>
+                            <input type="number" step="0.000001" class="form-control" @bind="newCity.Longitude" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideAddModal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="AddCity">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<CityViewModel> cities = new();
+    private bool isLoading = true;
+    private bool showAddModal = false;
+    private CreateCityRequest newCity = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCities();
+    }
+
+    private async Task LoadCities()
+    {
+        isLoading = true;
+        cities = await ApiClient.GetAllCitiesAsync();
+        isLoading = false;
+    }
+
+    private void ShowAddModal()
+    {
+        newCity = new CreateCityRequest();
+        showAddModal = true;
+    }
+
+    private void HideAddModal()
+    {
+        showAddModal = false;
+    }
+
+    private async Task AddCity()
+    {
+        var result = await ApiClient.CreateCityAsync(newCity);
+        if (result != null)
+        {
+            await LoadCities();
+            HideAddModal();
+        }
+    }
+}

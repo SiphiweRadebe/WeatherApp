@@ -1,37 +1,69 @@
+using Microsoft.EntityFrameworkCore;
+using WeatherApp.Core.Services;
+using WeatherApp.Data.Context;
+using WeatherApp.Data.Repositories;
+using WeatherApp.Migrations;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
 
-// Add services to the container.
-builder.Services.AddProblemDetails();
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
+
+builder.Services.AddDbContext<WeatherDbContext>(options =>
+    options.UseSqlServer(connectionString));
+
+builder.Services.AddScoped<ICityRepository, CityRepository>();
+builder.Services.AddScoped<IWeatherRecordRepository, WeatherRecordRepository>();
+builder.Services.AddScoped<IAlertRepository, AlertRepository>();
+builder.Services.AddScoped<ICityService, CityService>();
+builder.Services.AddScoped<IWeatherRecordService, WeatherRecordService>();
+builder.Services.AddScoped<IAlertService, AlertService>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+    });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-app.UseExceptionHandler();
-
-string[] summaries = ["Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"];
-
-app.MapGet("/weatherforecast", () =>
+using (var scope = app.Services.CreateScope())
 {
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+    var services = scope.ServiceProvider;
+    try
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("Running database migrations...");
+
+        MigrationRunner.MigrateDatabase(connectionString);
+
+        logger.LogInformation("Database migrations completed successfully");
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating the database");
+        throw;
+    }
+}
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.MapDefaultEndpoints();
+app.UseHttpsRedirection();
+app.UseCors("AllowAll");
+app.UseAuthorization();
+app.MapControllers();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

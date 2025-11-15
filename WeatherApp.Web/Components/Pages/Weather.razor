@@ -1,49 +1,227 @@
-﻿@page "/weather"
-@attribute [StreamRendering(true)]
-@attribute [OutputCache(Duration = 5)]
-
-@inject WeatherApiClient WeatherApi
+﻿@page "/weather/{CityId:int}"
+@using WeatherApp.Web.Services
+@using WeatherApp.Web.Models
+@inject IWeatherApiClient ApiClient
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
 
 <PageTitle>Weather</PageTitle>
 
-<h1>Weather</h1>
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/cities">Cities</a></li>
+        <li class="breadcrumb-item active">@(city?.Name ?? "Loading...")</li>
+    </ol>
+</nav>
 
-<p>This component demonstrates showing data loaded from a backend API service.</p>
-
-@if (forecasts == null)
+@if (isLoading)
 {
-    <p><em>Loading...</em></p>
+    <div class="text-center my-5">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else if (city == null)
+{
+    <div class="alert alert-danger">City not found</div>
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th aria-label="Temperature in Celsius">Temp. (C)</th>
-                <th aria-label="Temperature in Farenheit">Temp. (F)</th>
-                <th>Summary</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var forecast in forecasts)
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h1>@city.Name</h1>
+                            <p class="lead text-muted">@city.Country</p>
+                        </div>
+                        <button class="btn btn-success" @onclick="ShowAddWeatherModal">
+                            <i class="bi bi-plus-circle"></i> Add Weather Data
+                        </button>
+                    </div>
+
+                    @if (latestWeather != null)
+                    {
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="bg-light p-4 rounded">
+                                    <h2 class="display-3">@latestWeather.Temperature°C</h2>
+                                    <p class="text-muted">Feels like @(latestWeather.FeelsLike?.ToString("F1") ?? "N/A")°C</p>
+                                    <h5>@latestWeather.Condition</h5>
+                                    <p>@latestWeather.Description</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        <div class="card bg-info bg-opacity-10">
+                                            <div class="card-body text-center">
+                                                <i class="bi bi-droplet-fill fs-3"></i>
+                                                <h6>Humidity</h6>
+                                                <p class="fs-5 mb-0">@latestWeather.Humidity%</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="card bg-warning bg-opacity-10">
+                                            <div class="card-body text-center">
+                                                <i class="bi bi-wind fs-3"></i>
+                                                <h6>Wind</h6>
+                                                <p class="fs-5 mb-0">@(latestWeather.WindSpeed?.ToString("F1") ?? "N/A") km/h</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info mt-3">No weather data available. Add the first record!</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Weather History</h5>
+        </div>
+        <div class="card-body">
+            @if (weatherRecords.Any())
             {
-                <tr>
-                    <td>@forecast.Date.ToShortDateString()</td>
-                    <td>@forecast.TemperatureC</td>
-                    <td>@forecast.TemperatureF</td>
-                    <td>@forecast.Summary</td>
-                </tr>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date/Time</th>
+                                <th>Temperature</th>
+                                <th>Condition</th>
+                                <th>Humidity</th>
+                                <th>Wind</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var record in weatherRecords.Take(10))
+                            {
+                                <tr>
+                                    <td>@record.ObservationTime.ToString("MMM dd, HH:mm")</td>
+                                    <td>@record.Temperature°C</td>
+                                    <td>@record.Condition</td>
+                                    <td>@record.Humidity%</td>
+                                    <td>@(record.WindSpeed?.ToString("F1") ?? "N/A") km/h</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             }
-        </tbody>
-    </table>
+            else
+            {
+                <p class="text-muted">No historical data available</p>
+            }
+        </div>
+    </div>
+}
+
+@if (showAddWeatherModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Weather Data</h5>
+                    <button type="button" class="btn-close" @onclick="HideAddWeatherModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Temperature (°C)</label>
+                            <input type="number" step="0.1" class="form-control" @bind="newWeather.Temperature" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Feels Like (°C)</label>
+                            <input type="number" step="0.1" class="form-control" @bind="newWeather.FeelsLike" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Humidity (%)</label>
+                            <input type="number" class="form-control" @bind="newWeather.Humidity" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Wind Speed (km/h)</label>
+                            <input type="number" step="0.1" class="form-control" @bind="newWeather.WindSpeed" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Condition</label>
+                        <select class="form-control" @bind="newWeather.Condition">
+                            <option value="">Select...</option>
+                            <option>Clear</option>
+                            <option>Sunny</option>
+                            <option>Cloudy</option>
+                            <option>Rainy</option>
+                            <option>Stormy</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" rows="2" @bind="newWeather.Description"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideAddWeatherModal">Cancel</button>
+                    <button type="button" class="btn btn-success" @onclick="AddWeatherData">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
 }
 
 @code {
-    private WeatherForecast[]? forecasts;
+    [Parameter] public int CityId { get; set; }
+
+    private CityViewModel? city;
+    private WeatherRecordViewModel? latestWeather;
+    private List<WeatherRecordViewModel> weatherRecords = new();
+    private bool isLoading = true;
+    private bool showAddWeatherModal = false;
+    private CreateWeatherRecordRequest newWeather = new();
 
     protected override async Task OnInitializedAsync()
     {
-        forecasts = await WeatherApi.GetWeatherAsync();
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        city = await ApiClient.GetCityByIdAsync(CityId);
+        latestWeather = await ApiClient.GetLatestWeatherAsync(CityId);
+        weatherRecords = await ApiClient.GetWeatherRecordsByCityAsync(CityId);
+        isLoading = false;
+    }
+
+    private void ShowAddWeatherModal()
+    {
+        newWeather = new CreateWeatherRecordRequest { CityId = CityId };
+        showAddWeatherModal = true;
+    }
+
+    private void HideAddWeatherModal()
+    {
+        showAddWeatherModal = false;
+    }
+
+    private async Task AddWeatherData()
+    {
+        var result = await ApiClient.CreateWeatherRecordAsync(newWeather);
+        if (result != null)
+        {
+            await LoadData();
+            HideAddWeatherModal();
+        }
     }
 }
