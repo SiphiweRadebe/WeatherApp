@@ -6,8 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+builder.Services.AddRazorComponents();
 
 var apiUrl = builder.Configuration["services:weatherapp-api:https:0"]
     ?? builder.Configuration["services:weatherapp-api:http:0"]
@@ -33,7 +32,6 @@ app.UseAntiforgery();
 
 app.MapDefaultEndpoints();
 
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+app.MapRazorComponents<App>();
 
 app.Run();

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using WeatherApp.Core.Dtos;
+using WeatherApp.Core.DTOs;
 using WeatherApp.Core.Exceptions;
+using WeatherApp.Core.IService;
 using WeatherApp.Core.Services;
 
 namespace WeatherApp.Api.Controllers

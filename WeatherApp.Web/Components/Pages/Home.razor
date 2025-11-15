@@ -2,7 +2,6 @@
 @using WeatherApp.Web.Services
 @using WeatherApp.Web.Models
 @inject IWeatherApiClient ApiClient
-@rendermode InteractiveServer
 
 <PageTitle>Weather Dashboard</PageTitle>
 
@@ -63,4 +62,4 @@ else
         alerts = await ApiClient.GetActiveAlertsAsync();
         isLoading = false;
     }
-}
+}}

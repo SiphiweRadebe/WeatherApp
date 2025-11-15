@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using WeatherApp.Core.IService;
 using WeatherApp.Core.Services;
 using WeatherApp.Data.Context;
 using WeatherApp.Data.Repositories;
