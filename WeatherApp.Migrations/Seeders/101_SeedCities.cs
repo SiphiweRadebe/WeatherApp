@@ -10,6 +10,9 @@ namespace WeatherApp.Migrations.Seeders
         {
             var now = DateTime.UtcNow;
 
+            // Enable IDENTITY_INSERT to allow explicit ID values
+            Execute.Sql("SET IDENTITY_INSERT [dbo].[Cities] ON");
+
             Insert.IntoTable("Cities").Row(new
             {
                 Id = 1,
@@ -64,6 +67,9 @@ namespace WeatherApp.Migrations.Seeders
                 TimeZone = "Europe/Paris",
                 CreatedAt = now
             });
+
+            // Disable IDENTITY_INSERT after inserts
+            Execute.Sql("SET IDENTITY_INSERT [dbo].[Cities] OFF");
         }
 
         public override void Down()

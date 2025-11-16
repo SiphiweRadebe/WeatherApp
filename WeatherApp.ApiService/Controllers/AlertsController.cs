@@ -19,6 +19,21 @@ namespace WeatherApp.Api.Controllers
             _logger = logger;
         }
 
+        [HttpGet("active")]
+        public async Task<ActionResult<IEnumerable<AlertDto>>> GetAllActive()
+        {
+            try
+            {
+                var alerts = await _alertService.GetAllActiveAsync();
+                return Ok(alerts);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving active alerts");
+                return StatusCode(500, "An error occurred while retrieving alerts");
+            }
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<AlertDto>> GetById(int id)
         {
@@ -35,21 +50,6 @@ namespace WeatherApp.Api.Controllers
             {
                 _logger.LogError(ex, "Error retrieving alert {AlertId}", id);
                 return StatusCode(500, "An error occurred while retrieving the alert");
-            }
-        }
-
-        [HttpGet("active")]
-        public async Task<ActionResult<IEnumerable<AlertDto>>> GetAllActive()
-        {
-            try
-            {
-                var alerts = await _alertService.GetAllActiveAsync();
-                return Ok(alerts);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving active alerts");
-                return StatusCode(500, "An error occurred while retrieving alerts");
             }
         }
 

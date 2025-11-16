@@ -10,6 +10,9 @@ namespace WeatherApp.Migrations.Seeders
         {
             var now = DateTime.UtcNow;
 
+            // Enable IDENTITY_INSERT for Alerts table
+            Execute.Sql("SET IDENTITY_INSERT [dbo].[Alerts] ON");
+
             Insert.IntoTable("Alerts").Row(new
             {
                 Id = 1,
@@ -49,6 +52,10 @@ namespace WeatherApp.Migrations.Seeders
                 CreatedAt = now
             });
 
+            // Disable IDENTITY_INSERT for Alerts table
+            Execute.Sql("SET IDENTITY_INSERT [dbo].[Alerts] OFF");
+
+            // Insert CityAlerts (no IDENTITY_INSERT needed if CityAlerts doesn't have an Id column)
             Insert.IntoTable("CityAlerts").Row(new
             {
                 CityId = 3,

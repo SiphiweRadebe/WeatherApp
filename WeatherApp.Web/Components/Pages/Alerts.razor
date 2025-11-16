@@ -1,0 +1,100 @@
+@page "/alerts"
+@using WeatherApp.Web.Services
+@using WeatherApp.Web.Models
+@inject IWeatherApiClient ApiClient
+
+<PageTitle>Alerts</PageTitle>
+
+<div class="mb-4">
+    <h1>Weather Alerts</h1>
+</div>
+
+@if (isLoading)
+{
+    <div class="text-center my-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p>Loading alerts...</p>
+    </div>
+}
+else if (!alerts.Any())
+{
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> No active alerts at this time.
+    </div>
+}
+else
+{
+    <div class="row">
+        @foreach (var alert in alerts)
+        {
+            <div class="col-md-6 mb-3">
+                <div class="card alert-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0">@alert.Title</h5>
+                            <span class="badge bg-@GetSeverityColor(alert.Severity)">@alert.Severity</span>
+                        </div>
+                        <p class="card-subtitle text-muted mb-2">@alert.AlertType</p>
+                        <p class="card-text">@alert.Description</p>
+                        
+                        @if (alert.AffectedCities?.Any() == true)
+                        {
+                            <div class="mt-2">
+                                <small class="text-muted d-block mb-1">Affected Cities:</small>
+                                <div class="d-flex flex-wrap gap-1">
+                                    @foreach (var city in alert.AffectedCities)
+                                    {
+                                        <span class="badge bg-light text-dark">@city</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        
+                        <div class="mt-3 text-muted small">
+                            <p class="mb-1">
+                                <i class="bi bi-calendar-event"></i> 
+                                Started: @alert.StartTime.ToString("MMM dd, yyyy HH:mm")
+                            </p>
+                            @if (alert.EndTime.HasValue)
+                            {
+                                <p class="mb-0">
+                                    <i class="bi bi-calendar-check"></i> 
+                                    Ended: @alert.EndTime.Value.ToString("MMM dd, yyyy HH:mm")
+                                </p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<AlertViewModel> alerts = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAlerts();
+    }
+
+    private async Task LoadAlerts()
+    {
+        isLoading = true;
+        alerts = await ApiClient.GetActiveAlertsAsync();
+        isLoading = false;
+    }
+
+    private string GetSeverityColor(string severity)
+    {
+        return severity?.ToLower() switch
+        {
+            "critical" => "danger",
+            "high" => "warning",
+            "medium" => "info",
+            "low" => "success",
+            _ => "secondary"
+        };
+    }
+}

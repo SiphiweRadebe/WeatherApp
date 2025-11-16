@@ -10,8 +10,12 @@ namespace WeatherApp.Migrations.Seeders
         {
             var now = DateTime.UtcNow;
 
+            // Enable IDENTITY_INSERT to allow explicit ID values
+            Execute.Sql("SET IDENTITY_INSERT [dbo].[WeatherRecords] ON");
+
             Insert.IntoTable("WeatherRecords").Row(new
             {
+                Id = 1,  // ← ADD THIS
                 CityId = 1,
                 ObservationTime = now.AddHours(-2),
                 Temperature = 15.5m,
@@ -27,6 +31,7 @@ namespace WeatherApp.Migrations.Seeders
 
             Insert.IntoTable("WeatherRecords").Row(new
             {
+                Id = 2,  // ← ADD THIS
                 CityId = 2,
                 ObservationTime = now.AddHours(-1),
                 Temperature = 22.3m,
@@ -42,6 +47,7 @@ namespace WeatherApp.Migrations.Seeders
 
             Insert.IntoTable("WeatherRecords").Row(new
             {
+                Id = 3,  // ← ADD THIS
                 CityId = 3,
                 ObservationTime = now.AddHours(-3),
                 Temperature = 28.7m,
@@ -57,6 +63,7 @@ namespace WeatherApp.Migrations.Seeders
 
             Insert.IntoTable("WeatherRecords").Row(new
             {
+                Id = 4,  // ← ADD THIS
                 CityId = 4,
                 ObservationTime = now.AddHours(-4),
                 Temperature = 18.9m,
@@ -72,6 +79,7 @@ namespace WeatherApp.Migrations.Seeders
 
             Insert.IntoTable("WeatherRecords").Row(new
             {
+                Id = 5,  // ← ADD THIS
                 CityId = 5,
                 ObservationTime = now.AddHours(-1),
                 Temperature = 16.2m,
@@ -84,6 +92,9 @@ namespace WeatherApp.Migrations.Seeders
                 Description = "Beautiful clear evening",
                 CreatedAt = now
             });
+
+            // Disable IDENTITY_INSERT after inserts
+            Execute.Sql("SET IDENTITY_INSERT [dbo].[WeatherRecords] OFF");
         }
 
         public override void Down()

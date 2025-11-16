@@ -1,8 +1,7 @@
-ï»¿@page "/weather/{CityId:int}"
+@page "/weather/{CityId:int}"
 @using WeatherApp.Web.Services
 @using WeatherApp.Web.Models
 @inject IWeatherApiClient ApiClient
-@inject NavigationManager Navigation
 
 <PageTitle>Weather</PageTitle>
 
@@ -12,6 +11,14 @@
         <li class="breadcrumb-item active">@(city?.Name ?? "Loading...")</li>
     </ol>
 </nav>
+
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
 
 @if (isLoading)
 {
@@ -34,9 +41,14 @@ else
                             <h1>@city.Name</h1>
                             <p class="lead text-muted">@city.Country</p>
                         </div>
-                        <button class="btn btn-success" @onclick="ShowAddWeatherModal">
-                            <i class="bi bi-plus-circle"></i> Add Weather Data
-                        </button>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-info" @onclick="FetchFromOpenWeather" disabled="@isFetching">
+                                <i class="bi bi-cloud-download"></i> @(isFetching ? "Fetching..." : "Fetch from OpenWeather")
+                            </button>
+                            <button class="btn btn-success" @onclick="ShowAddWeatherModal">
+                                <i class="bi bi-plus-circle"></i> Add Weather Data
+                            </button>
+                        </div>
                     </div>
 
                     @if (latestWeather != null)
@@ -44,8 +56,8 @@ else
                         <div class="row mt-4">
                             <div class="col-md-6">
                                 <div class="bg-light p-4 rounded">
-                                    <h2 class="display-3">@latestWeather.TemperatureÂ°C</h2>
-                                    <p class="text-muted">Feels like @(latestWeather.FeelsLike?.ToString("F1") ?? "N/A")Â°C</p>
+                                    <h2 class="display-3">@latestWeather.Temperature°C</h2>
+                                    <p class="text-muted">Feels like @(latestWeather.FeelsLike?.ToString("F1") ?? "N/A")°C</p>
                                     <h5>@latestWeather.Condition</h5>
                                     <p>@latestWeather.Description</p>
                                 </div>
@@ -106,7 +118,7 @@ else
                             {
                                 <tr>
                                     <td>@record.ObservationTime.ToString("MMM dd, HH:mm")</td>
-                                    <td>@record.TemperatureÂ°C</td>
+                                    <td>@record.Temperature°C</td>
                                     <td>@record.Condition</td>
                                     <td>@record.Humidity%</td>
                                     <td>@(record.WindSpeed?.ToString("F1") ?? "N/A") km/h</td>
@@ -134,13 +146,17 @@ else
                     <button type="button" class="btn-close" @onclick="HideAddWeatherModal"></button>
                 </div>
                 <div class="modal-body">
+                    @if (modalErrorMessage != null)
+                    {
+                        <div class="alert alert-danger">@modalErrorMessage</div>
+                    }
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Temperature (Â°C)</label>
+                            <label class="form-label">Temperature (°C)</label>
                             <input type="number" step="0.1" class="form-control" @bind="newWeather.Temperature" />
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Feels Like (Â°C)</label>
+                            <label class="form-label">Feels Like (°C)</label>
                             <input type="number" step="0.1" class="form-control" @bind="newWeather.FeelsLike" />
                         </div>
                     </div>
@@ -172,7 +188,9 @@ else
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @onclick="HideAddWeatherModal">Cancel</button>
-                    <button type="button" class="btn btn-success" @onclick="AddWeatherData">Save</button>
+                    <button type="button" class="btn btn-success" @onclick="AddWeatherData" disabled="@isAddingWeather">
+                        @(isAddingWeather ? "Saving..." : "Save")
+                    </button>
                 </div>
             </div>
         </div>
@@ -180,14 +198,19 @@ else
 }
 
 @code {
-    [Parameter] public int CityId { get; set; }
+    [Parameter]
+    public int CityId { get; set; }
 
     private CityViewModel? city;
     private WeatherRecordViewModel? latestWeather;
     private List<WeatherRecordViewModel> weatherRecords = new();
     private bool isLoading = true;
+    private bool isFetching = false;
+    private bool isAddingWeather = false;
     private bool showAddWeatherModal = false;
     private CreateWeatherRecordRequest newWeather = new();
+    private string? errorMessage;
+    private string? modalErrorMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -196,31 +219,94 @@ else
 
     private async Task LoadData()
     {
-        isLoading = true;
-        city = await ApiClient.GetCityByIdAsync(CityId);
-        latestWeather = await ApiClient.GetLatestWeatherAsync(CityId);
-        weatherRecords = await ApiClient.GetWeatherRecordsByCityAsync(CityId);
-        isLoading = false;
+        try
+        {
+            isLoading = true;
+            errorMessage = null;
+            city = await ApiClient.GetCityByIdAsync(CityId);
+            latestWeather = await ApiClient.GetLatestWeatherAsync(CityId);
+            weatherRecords = await ApiClient.GetWeatherRecordsByCityAsync(CityId);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading data: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task FetchFromOpenWeather()
+    {
+        try
+        {
+            isFetching = true;
+            errorMessage = null;
+            var result = await ApiClient.FetchAndSaveWeatherFromOpenWeatherAsync(CityId);
+            if (result != null)
+            {
+                await LoadData();
+            }
+            else
+            {
+                errorMessage = "Failed to fetch weather data. Check that city coordinates are valid.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error fetching weather: {ex.Message}";
+        }
+        finally
+        {
+            isFetching = false;
+        }
     }
 
     private void ShowAddWeatherModal()
     {
         newWeather = new CreateWeatherRecordRequest { CityId = CityId };
+        modalErrorMessage = null;
         showAddWeatherModal = true;
     }
 
     private void HideAddWeatherModal()
     {
         showAddWeatherModal = false;
+        modalErrorMessage = null;
     }
 
     private async Task AddWeatherData()
     {
-        var result = await ApiClient.CreateWeatherRecordAsync(newWeather);
-        if (result != null)
+        try
         {
-            await LoadData();
-            HideAddWeatherModal();
+            isAddingWeather = true;
+            modalErrorMessage = null;
+
+            if (newWeather.Temperature == 0 && newWeather.Humidity == 0)
+            {
+                modalErrorMessage = "Please enter at least temperature and humidity values.";
+                return;
+            }
+
+            var result = await ApiClient.CreateWeatherRecordAsync(newWeather);
+            if (result != null)
+            {
+                await LoadData();
+                HideAddWeatherModal();
+            }
+            else
+            {
+                modalErrorMessage = "Failed to save weather data. Please check your input.";
+            }
+        }
+        catch (Exception ex)
+        {
+            modalErrorMessage = $"Error saving weather data: {ex.Message}";
+        }
+        finally
+        {
+            isAddingWeather = false;
         }
     }
-}}
+}

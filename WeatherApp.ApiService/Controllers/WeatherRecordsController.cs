@@ -21,21 +21,20 @@ namespace WeatherApp.Api.Controllers
             _logger = logger;
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<WeatherRecordDto>> GetById(int id)
+        [HttpGet("city/{cityId}/latest")]
+        public async Task<ActionResult<WeatherRecordDto>> GetLatestByCityId(int cityId)
         {
             try
             {
-                var record = await _weatherRecordService.GetByIdAsync(id);
+                var record = await _weatherRecordService.GetLatestByCityIdAsync(cityId);
+                if (record == null)
+                    return NotFound($"No weather records found for city {cityId}");
+
                 return Ok(record);
-            }
-            catch (EntityNotFoundException ex)
-            {
-                return NotFound(ex.Message);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving weather record {RecordId}", id);
+                _logger.LogError(ex, "Error retrieving latest weather record for city {CityId}", cityId);
                 return StatusCode(500, "An error occurred while retrieving the weather record");
             }
         }
@@ -55,20 +54,21 @@ namespace WeatherApp.Api.Controllers
             }
         }
 
-        [HttpGet("city/{cityId}/latest")]
-        public async Task<ActionResult<WeatherRecordDto>> GetLatestByCityId(int cityId)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<WeatherRecordDto>> GetById(int id)
         {
             try
             {
-                var record = await _weatherRecordService.GetLatestByCityIdAsync(cityId);
-                if (record == null)
-                    return NotFound($"No weather records found for city {cityId}");
-
+                var record = await _weatherRecordService.GetByIdAsync(id);
                 return Ok(record);
+            }
+            catch (EntityNotFoundException ex)
+            {
+                return NotFound(ex.Message);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving latest weather record for city {CityId}", cityId);
+                _logger.LogError(ex, "Error retrieving weather record {RecordId}", id);
                 return StatusCode(500, "An error occurred while retrieving the weather record");
             }
         }
