@@ -24,7 +24,12 @@ builder.Services.AddScoped<IWeatherRecordService, WeatherRecordService>();
 builder.Services.AddScoped<IAlertService, AlertService>();
 
 // Add OpenWeatherMap client
-builder.Services.AddHttpClient<IOpenWeatherClient, OpenWeatherClient>();
+//builder.Services.AddHttpClient<IOpenWeatherClient, OpenWeatherClient>();
+builder.Services.AddHttpClient<IOpenWeatherClient, OpenWeatherClient>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(10);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
 
 builder.Services.AddCors(options =>
 {
