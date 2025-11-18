@@ -86,6 +86,38 @@ namespace WeatherApp.Core.Services
             return MapToDto(record);
         }
 
+        // NEW METHOD - Fetch from OpenWeather (mock version)
+        public async Task<WeatherRecordDto?> FetchFromOpenWeatherAsync(int cityId)
+        {
+            var city = await _cityRepository.GetByIdAsync(cityId);
+            if (city == null)
+                throw new EntityNotFoundException($"City with ID {cityId} not found");
+
+            _logger.LogInformation("Generating mock weather data for {CityName}", city.Name);
+
+            // Create mock weather data
+            var random = new Random();
+            var dto = new CreateWeatherRecordDto
+            {
+                CityId = cityId,
+                ObservationTime = DateTime.UtcNow,
+                Temperature = random.Next(15, 35),
+                FeelsLike = random.Next(15, 35),
+                Humidity = random.Next(40, 80),
+                WindSpeed = random.Next(5, 25),
+                WindDirection = new[] { "N", "NE", "E", "SE", "S", "SW", "W", "NW" }[random.Next(8)],
+                Pressure = random.Next(980, 1030),
+                Condition = new[] { "Clear", "Sunny", "Cloudy", "Rainy", "Partly Cloudy" }[random.Next(5)],
+                Description = "Mock weather data fetched from simulated API"
+            };
+
+            // Use existing CreateAsync method to save and trigger alerts
+            var record = await CreateAsync(dto);
+
+            _logger.LogInformation("Successfully created mock weather for {CityName}", city.Name);
+            return record;
+        }
+
         public async Task<bool> DeleteAsync(int id)
         {
             var result = await _weatherRecordRepository.DeleteAsync(id);

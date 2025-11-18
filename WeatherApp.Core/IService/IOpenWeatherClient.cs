@@ -1,3 +1,5 @@
+using WeatherApp.Core.DTOs;
+
 namespace WeatherApp.Core.IService
 {
     public interface IOpenWeatherClient

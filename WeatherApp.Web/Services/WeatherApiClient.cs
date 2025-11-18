@@ -13,7 +13,7 @@ namespace WeatherApp.Web.Services
         Task<WeatherRecordViewModel?> CreateWeatherRecordAsync(CreateWeatherRecordRequest request);
         Task<List<AlertViewModel>> GetActiveAlertsAsync();
         Task<List<AlertViewModel>> GetAlertsByCityAsync(int cityId);
-        Task<OpenWeatherData?> FetchAndSaveWeatherFromOpenWeatherAsync(int cityId);
+        Task<WeatherRecordViewModel?> FetchAndSaveWeatherFromOpenWeatherAsync(int cityId);
         Task<OpenWeatherData?> GetCurrentWeatherFromOpenWeatherAsync(int cityId);
     }
 
@@ -64,14 +64,20 @@ namespace WeatherApp.Web.Services
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogError("API error creating city: {StatusCode} - {ErrorContent}", response.StatusCode, errorContent);
-                    return null;
+                    throw new HttpRequestException($"API error creating city: {response.StatusCode} - {errorContent}");
                 }
-                return await response.Content.ReadFromJsonAsync<CityViewModel>();
+
+                var created = await response.Content.ReadFromJsonAsync<CityViewModel>();
+                return created;
+            }
+            catch (HttpRequestException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating city: {Message}", ex.Message);
-                return null;
+                throw new HttpRequestException("Error creating city", ex);
             }
         }
 
@@ -111,14 +117,18 @@ namespace WeatherApp.Web.Services
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogError("API error creating weather record: {StatusCode} - {ErrorContent}", response.StatusCode, errorContent);
-                    return null;
+                    throw new HttpRequestException($"API error creating weather record: {response.StatusCode} - {errorContent}");
                 }
                 return await response.Content.ReadFromJsonAsync<WeatherRecordViewModel>();
+            }
+            catch (HttpRequestException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating weather record: {Message}", ex.Message);
-                return null;
+                throw new HttpRequestException("Error creating weather record", ex);
             }
         }
 
@@ -150,7 +160,7 @@ namespace WeatherApp.Web.Services
             }
         }
 
-        public async Task<OpenWeatherData?> FetchAndSaveWeatherFromOpenWeatherAsync(int cityId)
+        public async Task<WeatherRecordViewModel?> FetchAndSaveWeatherFromOpenWeatherAsync(int cityId)
         {
             try
             {
@@ -159,14 +169,18 @@ namespace WeatherApp.Web.Services
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogError("API error fetching weather: {StatusCode} - {ErrorContent}", response.StatusCode, errorContent);
-                    return null;
+                    throw new HttpRequestException($"API error fetching weather: {response.StatusCode} - {errorContent}");
                 }
-                return await response.Content.ReadFromJsonAsync<OpenWeatherData>();
+                return await response.Content.ReadFromJsonAsync<WeatherRecordViewModel>();
+            }
+            catch (HttpRequestException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching and saving weather from OpenWeather for city {CityId}: {Message}", cityId, ex.Message);
-                return null;
+                throw new HttpRequestException("Error fetching and saving weather", ex);
             }
         }
 

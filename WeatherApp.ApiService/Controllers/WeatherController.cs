@@ -26,9 +26,7 @@ namespace WeatherApp.Api.Controllers
             _logger = logger;
         }
 
-        /// <summary>
         /// Fetch current weather from OpenWeatherMap and save to database
-        /// </summary>
         [HttpPost("fetch-and-save/{cityId}")]
         public async Task<ActionResult<WeatherRecordDto>> FetchAndSaveWeatherAsync(int cityId)
         {
@@ -72,9 +70,9 @@ namespace WeatherApp.Api.Controllers
             }
         }
 
-        /// <summary>
+
         /// Fetch current weather from OpenWeatherMap only (without saving)
-        /// </summary>
+
         [HttpGet("current/{cityId}")]
         public async Task<ActionResult> GetCurrentWeatherAsync(int cityId)
         {

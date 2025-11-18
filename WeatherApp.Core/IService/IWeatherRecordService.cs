@@ -11,5 +11,6 @@ namespace WeatherApp.Core.IService
         Task<WeatherRecordDto?> GetLatestByCityIdAsync(int cityId);
         Task<WeatherRecordDto> CreateAsync(CreateWeatherRecordDto dto);
         Task<bool> DeleteAsync(int id);
+        Task<WeatherRecordDto?> FetchFromOpenWeatherAsync(int cityId);
     }
 }
