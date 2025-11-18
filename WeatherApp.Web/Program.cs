@@ -6,11 +6,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-builder.Services.AddRazorComponents();
+// ADD THIS - Enable Interactive Server Components
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
 
-var apiUrl = builder.Configuration["services:weatherapp-api:https:0"]
+var apiUrl = Environment.GetEnvironmentVariable("WEATHERAPP_API_URL")
+    ?? builder.Configuration["services:weatherapp-api:https:0"]
     ?? builder.Configuration["services:weatherapp-api:http:0"]
-    ?? "https://localhost:7001";
+    ?? "https://localhost:7581";
 
 builder.Services.AddHttpClient<IWeatherApiClient, WeatherApiClient>(client =>
 {
@@ -32,6 +35,8 @@ app.UseAntiforgery();
 
 app.MapDefaultEndpoints();
 
-app.MapRazorComponents<App>();
+// ADD THIS - Enable Interactive Server Render Mode
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
 
 app.Run();

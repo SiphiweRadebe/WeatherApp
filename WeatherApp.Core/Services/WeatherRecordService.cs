@@ -17,16 +17,19 @@ namespace WeatherApp.Core.Services
         private readonly ICityRepository _cityRepository;
         private readonly IAlertService _alertService;
         private readonly ILogger<WeatherRecordService> _logger;
+        private readonly IOpenWeatherClient _openWeatherClient;
 
         public WeatherRecordService(
             IWeatherRecordRepository weatherRecordRepository,
             ICityRepository cityRepository,
             IAlertService alertService,
+            IOpenWeatherClient openWeatherClient,
             ILogger<WeatherRecordService> logger)
         {
             _weatherRecordRepository = weatherRecordRepository;
             _cityRepository = cityRepository;
             _alertService = alertService;
+            _openWeatherClient = openWeatherClient;
             _logger = logger;
         }
 
@@ -84,6 +87,62 @@ namespace WeatherApp.Core.Services
             await CheckAndCreateAlertsAsync(city, record);
 
             return MapToDto(record);
+        }
+
+        //Fetch from OpenWeather 
+        public async Task<WeatherRecordDto?> FetchFromOpenWeatherAsync(int cityId)
+        {
+            var city = await _cityRepository.GetByIdAsync(cityId);
+            if (city == null)
+                throw new EntityNotFoundException($"City with ID {cityId} not found");
+
+            _logger.LogInformation("Fetching real weather data from OpenWeather for {CityName}", city.Name);
+
+            // Call the OpenWeather service
+            var weatherData = await _openWeatherClient.GetCurrentWeatherAsync(city.Latitude, city.Longitude);
+
+            if (weatherData == null)
+            {
+                throw new BusinessException("Failed to fetch weather data from OpenWeather API. Please check the API key and city coordinates.");
+            }
+
+            // Convert wind degrees to direction
+            string windDirection = GetWindDirection((int)weatherData.WindDegree);
+
+            var dto = new CreateWeatherRecordDto
+            {
+                CityId = cityId,
+                ObservationTime = DateTime.UtcNow,
+                Temperature = weatherData.Temperature,
+                FeelsLike = weatherData.FeelsLike,
+                Humidity = weatherData.Humidity,
+                WindSpeed = weatherData.WindSpeed,
+                WindDirection = windDirection,
+                Pressure = weatherData.Pressure,
+                Condition = weatherData.Condition,
+                Description = weatherData.Description
+            };
+
+            // Save to database (this will also trigger alert logic)
+            var record = await CreateAsync(dto);
+
+            _logger.LogInformation("Successfully fetched and saved real weather for {CityName}: {Temp}°C",
+                city.Name, record.Temperature);
+
+            return record;
+        }
+
+        private string GetWindDirection(int degrees)
+        {
+            if (degrees >= 337.5 || degrees < 22.5) return "N";
+            if (degrees >= 22.5 && degrees < 67.5) return "NE";
+            if (degrees >= 67.5 && degrees < 112.5) return "E";
+            if (degrees >= 112.5 && degrees < 157.5) return "SE";
+            if (degrees >= 157.5 && degrees < 202.5) return "S";
+            if (degrees >= 202.5 && degrees < 247.5) return "SW";
+            if (degrees >= 247.5 && degrees < 292.5) return "W";
+            if (degrees >= 292.5 && degrees < 337.5) return "NW";
+            return "N";
         }
 
         public async Task<bool> DeleteAsync(int id)

@@ -1,7 +1,9 @@
-using System.Net.Http.Json;
-using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading.Tasks;
 using WeatherApp.Core.IService;
 
 namespace WeatherApp.Core.Services
@@ -10,119 +12,70 @@ namespace WeatherApp.Core.Services
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<OpenWeatherClient> _logger;
-        private readonly string _apiKey;
+        private readonly string ApiKey;
+        private readonly string _baseUrl;
 
-        // OpenWeatherMap API base URL
-        private const string BaseUrl = "https://api.openweathermap.org/data/2.5/weather";
-
-        public OpenWeatherClient(HttpClient httpClient, ILogger<OpenWeatherClient> logger, IConfiguration configuration)
+        public OpenWeatherClient(
+            HttpClient httpClient,
+            IConfiguration configuration,
+            ILogger<OpenWeatherClient> logger)
         {
             _httpClient = httpClient;
             _logger = logger;
-            _apiKey = configuration["OpenWeatherMap:ApiKey"] ?? throw new InvalidOperationException("OpenWeatherMap API key is not configured");
+            ApiKey = configuration["OpenWeatherMap:ApiKey"]
+                ?? throw new InvalidOperationException("OpenWeather API key not configured");
+            _baseUrl = configuration["OpenWeather:BaseUrl"]
+                ?? "https://api.openweathermap.org/data/2.5";
         }
 
         public async Task<OpenWeatherResponse?> GetCurrentWeatherAsync(decimal latitude, decimal longitude)
         {
             try
             {
-                _logger.LogInformation("Fetching weather from OpenWeatherMap for lat={Latitude}, lon={Longitude}", latitude, longitude);
+                var url = $"{_baseUrl}/weather?lat={latitude}&lon={longitude}&appid={ApiKey}&units=metric";
 
-                var url = $"{BaseUrl}?lat={latitude}&lon={longitude}&appid={_apiKey}&units=metric";
+                _logger.LogInformation("Calling OpenWeather API for coordinates: {Lat}, {Lon}", latitude, longitude);
+
                 var response = await _httpClient.GetAsync(url);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogError("OpenWeatherMap API returned status code {StatusCode}", response.StatusCode);
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("OpenWeather API error: Status {StatusCode}, Response: {Response}",
+                        response.StatusCode, errorContent);
                     return null;
                 }
 
-                var data = await response.Content.ReadFromJsonAsync<OpenWeatherMapRawResponse>();
-                if (data == null)
-                {
-                    _logger.LogWarning("Failed to deserialize OpenWeatherMap response");
-                    return null;
-                }
+                var json = await response.Content.ReadAsStringAsync();
+                var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
 
-                var windDirection = GetWindDirection(data.Wind?.Deg ?? 0);
+                var main = root.GetProperty("main");
+                var wind = root.GetProperty("wind");
+                var weather = root.GetProperty("weather")[0];
 
-                return new OpenWeatherResponse
+                var result = new OpenWeatherResponse
                 {
-                    Temperature = data.Main?.Temp ?? 0,
-                    FeelsLike = data.Main?.FeelsLike ?? 0,
-                    Humidity = data.Main?.Humidity ?? 0,
-                    Pressure = data.Main?.Pressure ?? 0,
-                    WindSpeed = data.Wind?.Speed ?? 0,
-                    WindDegree = data.Wind?.Deg,
-                    Condition = data.Weather?.FirstOrDefault()?.Main ?? "Unknown",
-                    Description = data.Weather?.FirstOrDefault()?.Description ?? "No description"
+                    Temperature = main.GetProperty("temp").GetDecimal(),
+                    FeelsLike = main.GetProperty("feels_like").GetDecimal(),
+                    Humidity = main.GetProperty("humidity").GetInt32(),
+                    Pressure = main.GetProperty("pressure").GetDecimal(),
+                    WindSpeed = wind.GetProperty("speed").GetDecimal() * 3.6m, // Convert m/s to km/h
+                    WindDegree = wind.TryGetProperty("deg", out var deg) ? deg.GetInt32() : 0,
+                    Condition = weather.GetProperty("main").GetString() ?? "Unknown",
+                    Description = weather.GetProperty("description").GetString() ?? ""
                 };
+
+                _logger.LogInformation("Successfully fetched weather: {Temp}°C, {Condition}",
+                    result.Temperature, result.Condition);
+
+                return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching weather from OpenWeatherMap");
+                _logger.LogError(ex, "Error fetching weather from OpenWeather API");
                 return null;
             }
         }
-
-        /// <summary>
-        /// Convert wind degree to cardinal direction
-        /// </summary>
-        private static string GetWindDirection(decimal degrees)
-        {
-            var normalized = (degrees % 360 + 360) % 360;
-            var directions = new[] { "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW" };
-            var index = (int)((normalized + 11.25m) / 22.5m) % 16;
-            return directions[index];
-        }
-
-        #region Internal DTOs for OpenWeatherMap Response Mapping
-
-        private class OpenWeatherMapRawResponse
-        {
-            [JsonPropertyName("main")]
-            public MainInfo? Main { get; set; }
-
-            [JsonPropertyName("weather")]
-            public Weather[]? Weather { get; set; }
-
-            [JsonPropertyName("wind")]
-            public WindInfo? Wind { get; set; }
-        }
-
-        private class MainInfo
-        {
-            [JsonPropertyName("temp")]
-            public decimal Temp { get; set; }
-
-            [JsonPropertyName("feels_like")]
-            public decimal FeelsLike { get; set; }
-
-            [JsonPropertyName("humidity")]
-            public int Humidity { get; set; }
-
-            [JsonPropertyName("pressure")]
-            public decimal Pressure { get; set; }
-        }
-
-        private class Weather
-        {
-            [JsonPropertyName("main")]
-            public string? Main { get; set; }
-
-            [JsonPropertyName("description")]
-            public string? Description { get; set; }
-        }
-
-        private class WindInfo
-        {
-            [JsonPropertyName("speed")]
-            public decimal Speed { get; set; }
-
-            [JsonPropertyName("deg")]
-            public decimal Deg { get; set; }
-        }
-
-        #endregion
     }
 }

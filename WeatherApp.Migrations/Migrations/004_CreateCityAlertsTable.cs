@@ -36,6 +36,9 @@ namespace WeatherApp.Migrations.Migrations
                 .OnColumn("AlertId");
         }
 
+        
+        /// Rollback: dismantles the city-alert relationship table and all its constraints.
+        
         public override void Down()
         {
             Delete.Index("IX_CityAlerts_AlertId").OnTable("CityAlerts");

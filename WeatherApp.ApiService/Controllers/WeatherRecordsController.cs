@@ -95,6 +95,35 @@ namespace WeatherApp.Api.Controllers
                 return StatusCode(500, "An error occurred while creating the weather record");
             }
         }
+        [HttpPost("fetch/{cityId}")]
+        public async Task<ActionResult<WeatherRecordDto>> FetchFromOpenWeather(int cityId)
+        {
+            try
+            {
+                _logger.LogInformation("Fetching weather from OpenWeather for city {CityId}", cityId);
+
+                // Call the service method that fetches from OpenWeather
+                var record = await _weatherRecordService.FetchFromOpenWeatherAsync(cityId);
+
+                if (record == null)
+                    return NotFound($"Unable to fetch weather for city {cityId}");
+
+                return Ok(record);
+            }
+            catch (EntityNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (BusinessException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching weather from OpenWeather for city {CityId}", cityId);
+                return StatusCode(500, "An error occurred while fetching weather data");
+            }
+        }
 
         [HttpDelete("{id}")]
         public async Task<ActionResult> Delete(int id)

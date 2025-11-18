@@ -20,6 +20,7 @@ namespace WeatherApp.Core.Services
         {
             _cityRepository = cityRepository;
             _logger = logger;
+
         }
 
         public async Task<CityDto> GetByIdAsync(int id)
