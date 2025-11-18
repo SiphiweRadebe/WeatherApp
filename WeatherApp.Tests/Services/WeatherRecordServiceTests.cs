@@ -247,7 +247,6 @@ public class WeatherRecordServiceTests
             .ReturnsAsync((WeatherRecord w) => w);
         _mockAlertService.Setup(s => s.CreateAsync(It.IsAny<CreateAlertDto>()))
             .ReturnsAsync(new AlertDto());
-
         // Act
         var result = await _weatherRecordService.CreateAsync(createDto);
 
