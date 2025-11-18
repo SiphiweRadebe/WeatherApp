@@ -1,4 +1,4 @@
-name: Build
+name: .NET Weather App CI
 
 on:
   push:
@@ -12,11 +12,23 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+    
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+    
     - name: Restore
       run: dotnet restore
+    
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build --configuration Release --no-restore
+    
+    - name: Find and run tests
+      run: |
+        TEST_PROJECTS=$(find . -name "*Tests.csproj" -o -name "*.Tests.csproj")
+        if [ -z "$TEST_PROJECTS" ]; then
+          echo "No test projects found, skipping tests"
+        else
+          dotnet test --configuration Release --no-build --verbosity normal
+        fi
