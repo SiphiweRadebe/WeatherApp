@@ -1,0 +1,120 @@
+name: .NET Weather App CI/CD
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    
+    - name: Restore dependencies
+      run: dotnet restore WeatherApp.sln
+      working-directory: ./
+    
+    - name: Build solution
+      run: dotnet build WeatherApp.sln --configuration Release --no-restore
+      working-directory: ./
+    
+    - name: Run tests
+      run: dotnet test tests/WeatherApp.Tests/WeatherApp.Tests.csproj --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+      working-directory: ./
+    
+    - name: Publish test results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: NUnit Tests
+        path: '**/test-results.trx'
+        reporter: dotnet-trx
+        fail-on-error: true
+    
+    - name: Publish API
+      run: dotnet publish src/WeatherApp.Api/WeatherApp.Api.csproj --configuration Release --output ./publish/api --no-build
+      working-directory: ./
+    
+    - name: Publish Web
+      run: dotnet publish src/WeatherApp.Web/WeatherApp.Web.csproj --configuration Release --output ./publish/web --no-build
+      working-directory: ./
+    
+    - name: Upload API artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: weather-api
+        path: ./publish/api
+        retention-days: 30
+    
+    - name: Upload Web artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: weather-web
+        path: ./publish/web
+        retention-days: 30
+
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    
+    - name: Restore dependencies
+      run: dotnet restore WeatherApp.sln
+    
+    - name: Run code analysis
+      run: dotnet build WeatherApp.sln --configuration Release /p:TreatWarningsAsErrors=false
+    
+    - name: Install ReportGenerator
+      run: dotnet tool install -g dotnet-reportgenerator-globaltool
+    
+    - name: Run tests with coverage
+      run: dotnet test tests/WeatherApp.Tests/WeatherApp.Tests.csproj --configuration Release --collect:"XPlat Code Coverage" --results-directory ./coverage
+    
+    - name: Generate coverage report
+      run: reportgenerator -reports:./coverage/**/coverage.cobertura.xml -targetdir:./coverage-report -reporttypes:Html
+    
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: ./coverage-report
+        retention-days: 30
+
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    
+    - name: Restore dependencies
+      run: dotnet restore WeatherApp.sln
+    
+    - name: Run security scan
+      run: |
+        dotnet list WeatherApp.sln package --vulnerable --include-transitive 2>&1 | tee security-scan.log
+        if grep -q "has the following vulnerable packages" security-scan.log; then
+          echo "⚠️ Vulnerable packages found!"
+          exit 1
+        fi
