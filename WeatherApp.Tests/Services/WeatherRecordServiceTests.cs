@@ -17,6 +17,7 @@ public class WeatherRecordServiceTests
     private Mock<ICityRepository> _mockCityRepository;
     private Mock<IAlertService> _mockAlertService;
     private Mock<ILogger<WeatherRecordService>> _mockLogger;
+    private Mock<IOpenWeatherClient> _mockOpenWeatherClient;
     private WeatherRecordService _weatherRecordService;
 
     [SetUp]
@@ -26,10 +27,12 @@ public class WeatherRecordServiceTests
         _mockCityRepository = new Mock<ICityRepository>();
         _mockAlertService = new Mock<IAlertService>();
         _mockLogger = new Mock<ILogger<WeatherRecordService>>();
+        _mockOpenWeatherClient = new Mock<IOpenWeatherClient>();
         _weatherRecordService = new WeatherRecordService(
             _mockWeatherRecordRepository.Object,
             _mockCityRepository.Object,
             _mockAlertService.Object,
+            _mockOpenWeatherClient.Object,
             _mockLogger.Object);
     }
 
