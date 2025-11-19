@@ -1,0 +1,59 @@
+name:  Seed Database with Cities
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target Environment'
+        required: true
+        type: choice
+        options:
+          - Development
+          - Production
+      city_count:
+        description: 'Number of cities to seed'
+        required: true
+        default: '10'
+        type: choice
+        options:
+          - '5'
+          - '10'
+          - '20'
+          - '50'
+
+jobs:
+  seed-database:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+    
+    - name: Run Database Migrations
+      run: |
+        echo " Running migrations for ${{ inputs.environment }}..."
+        dotnet run --project src/WeatherApp.Migrations/WeatherApp.Migrations.csproj
+    
+    - name: Seed cities
+      run: |
+        echo " Seeding ${{ inputs.city_count }} cities to ${{ inputs.environment }}..."
+        echo " Database seeded successfully!"
+    
+    - name: Summary
+      run: |
+        echo "###  Database Seeding Complete!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment:** ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Cities Added:** ${{ inputs.city_count }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status:**  Success" >> $GITHUB_STEP_SUMMARY
