@@ -8,7 +8,7 @@ using WeatherApp.Core.Services;
 using WeatherApp.Data.Entities;
 using WeatherApp.Data.Repositories;
 
-namespace WeatherApp.Tests.Services;
+namespace WeatherApp.Tests.ServiceTests;
 
 [TestFixture]
 public class WeatherRecordServiceTests

@@ -4,7 +4,7 @@ using WeatherApp.Data.Context;
 using WeatherApp.Data.Entities;
 using WeatherApp.Data.Repositories;
 
-namespace WeatherApp.Tests.Repositories;
+namespace WeatherApp.Tests.RepositoryTests;
 
 [TestFixture]
 public class AlertRepositoryTests

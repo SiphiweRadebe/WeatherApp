@@ -9,7 +9,7 @@ using WeatherApp.Tests.Fakers;
 using WeatherApp.Web.Models;
 using WeatherApp.Web.Services;
 
-namespace WeatherApp.Tests.Services;
+namespace WeatherApp.Tests.ServiceTests;
 
 [TestFixture]
 public class WeatherApiClientTests
